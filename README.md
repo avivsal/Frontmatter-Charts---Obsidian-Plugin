@@ -115,18 +115,7 @@ group: genre
 2. It selects notes using `source`, then reads their front matter from Obsidian's **metadata cache** (no files are read from disk, so it stays fast in large vaults).
 3. It builds rows of `label + numeric values`, one per note or one per group, then sorts and limits them.
 4. It draws an SVG styled only with CSS variables.
-5. Each chart listens for metadata, delete and rename events and re-renders itself (debounced by about 600 ms). Listeners are cleaned up automatically when the block is unloaded (for example when the note is closed).
-
-```mermaid
-flowchart LR
-    A["fmchart code block<br/>(YAML)"] --> B["Validate options"]
-    B --> C["Select notes<br/>source"]
-    C --> D["Read front matter<br/>metadata cache"]
-    D --> E["Build rows<br/>group + aggregate"]
-    E --> F["Sort + limit"]
-    F --> G["Draw inline SVG<br/>theme CSS variables"]
-    H(["Vault events<br/>changed, delete, rename"]) -. "debounced 600 ms" .-> B
-```
+5. Each chart listens for metadata, delete and rename events and re-renders itself (debounced by about 600 ms). Listeners are cleaned up when the block leaves the screen.
 
 ## Configuration reference
 
@@ -143,18 +132,12 @@ Put options inside the code block as YAML `key: value` lines.
 | `aggregate` | `sum` `avg` `count` `min` `max` | `sum` with `field`, else `count` | How to combine values inside a group |
 | `sort` | `none` `label` `label-desc` `value` `value-desc` | see [Sorting](#sorting-and-limiting) | Row order |
 | `limit` | integer | none | Keep the first N rows after sorting |
-| `height` | number | `320` bar/line, `300` pie/doughnut | Chart height in SVG units ([details](#sizing)) |
+| `height` | pixels | `320` bar/line, `300` pie/doughnut | Chart height (width fills the container) |
 
 > [!IMPORTANT]
 > - Provide `field`, `group`, or both, otherwise you get a configuration error.
 > - **Quote tag sources**: write `source: "#book"`. An unquoted `#` starts a YAML comment.
-> - An unquoted `source: #book` does not raise an error. YAML treats it as a comment, so `source` is empty and the chart silently uses **the whole vault**.
 > - Option values are case-sensitive (`type: bar`, not `Bar`). Unknown keys are ignored silently.
-> - `aggregate` only has an effect together with `group`.
-
-### Sizing
-
-Charts are SVGs that scale to the width of the note. `height` sets the SVG's internal coordinate height (the width is fixed at 640 for bar/line and 360 for pie/doughnut), so it changes the **aspect ratio** rather than an exact pixel height. A wider note makes the chart taller proportionally. Pie and doughnut charts are capped at 420 px wide and centered.
 
 ### Choosing notes (`source`)
 
@@ -176,9 +159,6 @@ Charts are SVGs that scale to the width of the note. `height` sets the SVG's int
 | `rating: "4.5"` | 4.5 (numeric strings are parsed) |
 | `rating: 4,5` | 4.5 (comma accepted as decimal separator) |
 | `weight: 72kg` | 72 (leading number is used, unit dropped, no conversion) |
-| `big: 1e3` | 1000 (scientific notation works) |
-| `price: "$5"` | missing (the value must **start** with a digit, sign or `.`) |
-| `total: "1,234.5"` | **1.234** (the first comma is treated as a decimal point, so thousands separators give wrong values) |
 | empty, `null`, `abc` | missing |
 | `true` / `false` | missing (booleans are not numeric) |
 | `[1, 2]` | missing (lists are not numeric) |
@@ -235,9 +215,6 @@ Axis details: ticks are rounded to nice values (1, 2, 5, 10 multiples). With mor
 
 > [!NOTE]
 > If the group property is a list (for example `tags: [sci-fi, classic]`), the note is counted **once in every listed group**, so totals can exceed the number of notes.
-
-> [!TIP]
-> Group names are matched exactly, so `Sci-Fi` and `sci-fi` become two groups. Because grouped charts default to `sort: value-desc`, add `sort: label` when the groups are ordered categories such as months or dates, including for line charts.
 
 With several fields (`field: [pages, rating]`), each is aggregated separately into a multi-series chart. All series share one y-axis, so very different scales will flatten the smaller one. Use separate charts in that case.
 
@@ -504,9 +481,7 @@ Problems appear in place of the chart.
 - **Cut-off labels:** labels are truncated to stay tidy. Hover for the full text, shorten the `label` property, or use `limit`.
 - **Group totals exceed the note count:** the group property is a list.
 - **Colors do not follow the theme:** the theme may not define `--color-*` variables, so fallbacks are used.
-- **No update after editing a note:** updates are debounced (about 0.6 s) and rely on the metadata cache. Wait a moment, or close and reopen the note.
-- **Numbers are slightly off or tiny:** check for thousands separators such as `1,234.5`, which are read as `1.234`. Store plain numbers (`1234.5`).
-- **No tooltips on mobile:** exact values are shown as hover tooltips, which touch screens do not provide. Keep the number in the note, or use a desktop device to inspect values.
+- **No update after editing a note:** updates are debounced (about 0.6 s) and rely on the metadata cache. Wait a moment, or scroll the chart out of and back into view.
 
 </details>
 
@@ -563,8 +538,7 @@ Current constraints:
 - Only four chart types, with a categorical x-axis and a single shared y-axis
 - Data comes only from YAML front matter (no inline fields, note body or Dataview queries)
 - No click-through to notes, no per-series color option, no settings tab
-- Values with units are read by their leading number, with no conversion, and thousands separators are not supported
-- Exact values appear only in hover tooltips (not available on touch screens), and charts have no text alternative beyond `role="img"`
+- Values with units are read by their leading number, with no conversion
 
 Ideas for later (contributions welcome):
 
