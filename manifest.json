@@ -1,0 +1,9 @@
+{
+  "id": "frontmatter-charts",
+  "name": "Frontmatter Charts",
+  "version": "1.0.0",
+  "minAppVersion": "1.4.0",
+  "description": "Render bar, line, pie and doughnut charts from note front matter, using your theme's colors.",
+  "author": "You",
+  "isDesktopOnly": false
+}
